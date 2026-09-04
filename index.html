@@ -1,6 +1,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0B7A7A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="BİLSEM Programı">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
 <title>Çorlu BİLSEM Ders Programı</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -1420,6 +1426,16 @@ try{
   lk.rel = "icon"; lk.href = document.getElementById("logo").src;
   document.head.appendChild(lk);
 }catch(e){}
+
+/* Telefona "Ana Ekrana Ekle" ile kurulduğunda çevrimdışı çalışsın diye
+   service worker. file:// üzerinde kayıt mümkün değildir, sessizce atlanır. */
+(function sw(){
+  if(!("serviceWorker" in navigator)) return;
+  if(location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") return;
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+})();
 
 (function baslat(){
   try{

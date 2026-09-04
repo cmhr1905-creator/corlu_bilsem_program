@@ -157,6 +157,21 @@ Chrome, Safari, Edge ve Firefox'ta `file://` ile açıldığında şifre çözme
 öğretmen programları ve yazdırma tam çalışır. Zaten kalıcı güncelleme
 `araclar/guncelle.py` ile yapılıyor.
 
+### iPhone / iPad ve Android — telefona kurma
+
+Telefonda `.html` dosyasını açmak zahmetli. Onun yerine uygulamayı telefona kurun:
+
+**iPhone / iPad (Safari):** Siteyi **engelli olmayan bir ağdan** (ev wifi'si ya da
+mobil veri) açın → alttaki **Paylaş** düğmesi → **Ana Ekrana Ekle** → Ekle.
+Ana ekranda kurum logosuyla bir simge çıkar. Bundan sonra uygulama telefonun
+içinden açılır; okulun ağı engelli olsa da, internet hiç olmasa da çalışır.
+
+**Android (Chrome):** Sağ üstteki ⋮ → **Uygulamayı yükle** / **Ana ekrana ekle**.
+
+Kurulumdan sonra program güncellendiğinde, telefon açık bir ağa bağlıyken
+uygulamayı bir kez açmanız yeterli — yeni sürüm arka planda inip bir sonraki
+açılışta devreye girer.
+
 **Kalıcı çözüm için:** İl Millî Eğitim Müdürlüğü Bilgi İşlem birimine
 adresin erişime açılması için başvurulabilir. `github.io` genelde alan adı
 kategorisi nedeniyle topluca engellenir, tek tek beyaz listeye alınabilir.
