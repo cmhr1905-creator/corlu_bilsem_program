@@ -66,6 +66,7 @@
 }
 
 *{box-sizing:border-box}
+[hidden]{display:none !important}
 body{
   background:var(--bg); color:var(--text);
   font-family:"Source Sans 3", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -1286,6 +1287,7 @@ function kilidiAc(parola){
     ubad.textContent = "";
     unlockScreen.hidden = true;
     appWrap.hidden = false;
+    window.scrollTo(0, 0);
     boot(false);
     setTab("student");
     setTimeout(function(){ q.focus(); }, 40);
