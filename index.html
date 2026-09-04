@@ -273,6 +273,53 @@ button.primary:hover{filter:brightness(1.06)}
   .load .bar{background:#ddd}
   .load .bar i{background:#555}
   .lesson[data-open="0"] .mates-toggle{display:none}
+
+  /* ---- öğretmen programı: tek yatay sayfa ---- */
+  body[data-yazdir="ogretmen"] .wrap{gap:7px}
+  body[data-yazdir="ogretmen"] .masthead{gap:8px;align-items:center}
+  body[data-yazdir="ogretmen"] .brandline{gap:9px}
+  body[data-yazdir="ogretmen"] .logo{width:34px;height:34px;box-shadow:0 0 0 1px #bbb}
+  body[data-yazdir="ogretmen"] .eyebrow{font-size:7px;letter-spacing:.1em}
+  body[data-yazdir="ogretmen"] h1{font-size:15px}
+  body[data-yazdir="ogretmen"] .srcline{display:none}
+
+  body[data-yazdir="ogretmen"] .summary{padding:0;border:0;gap:12px;align-items:baseline}
+  body[data-yazdir="ogretmen"] .who-name{font-size:17px;margin:0 0 1px}
+  body[data-yazdir="ogretmen"] .who-sub{font-size:9.5px;margin:0}
+  body[data-yazdir="ogretmen"] .summary .chips{display:none}
+  body[data-yazdir="ogretmen"] .stats{gap:14px}
+  body[data-yazdir="ogretmen"] .stat .n{font-size:14px}
+  body[data-yazdir="ogretmen"] .stat .l,
+  body[data-yazdir="ogretmen"] .load .l{font-size:7px;letter-spacing:.08em}
+  body[data-yazdir="ogretmen"] .load{min-width:0;gap:2px}
+  body[data-yazdir="ogretmen"] .load .n{font-size:14px}
+  body[data-yazdir="ogretmen"] .load .cap{font-size:9px}
+  body[data-yazdir="ogretmen"] .load .bar{height:3px}
+  body[data-yazdir="ogretmen"] .note{font-size:9px;padding:4px 8px}
+
+  /* günler yan yana, yalnız dolu olanlar genişliği paylaşır */
+  body[data-yazdir="ogretmen"] .week{display:flex;flex-wrap:nowrap;gap:5px;align-items:stretch}
+  body[data-yazdir="ogretmen"] .day{flex:1 1 0;min-width:0;border-radius:5px;border-color:#999}
+  body[data-yazdir="ogretmen"] .day-hd{padding:3px 6px;background:#eee}
+  body[data-yazdir="ogretmen"] .day-hd .d{font-size:9.5px}
+  body[data-yazdir="ogretmen"] .day-hd .c{font-size:7px}
+
+  body[data-yazdir="ogretmen"] .lesson{padding:3px 5px;gap:1px}
+  body[data-yazdir="ogretmen"] .l-top{gap:4px}
+  body[data-yazdir="ogretmen"] .time{font-size:8.5px;padding-left:4px;border-left-width:2px}
+  body[data-yazdir="ogretmen"] .slot{font-size:6.5px;letter-spacing:.04em}
+  body[data-yazdir="ogretmen"] .chip{font-size:6.5px;padding:1px 3px;border-radius:3px}
+  body[data-yazdir="ogretmen"] .hours{font-size:6.5px}
+  body[data-yazdir="ogretmen"] .l-top .chip.ghost{display:none}
+  body[data-yazdir="ogretmen"] .l-body{padding-left:4px}
+  body[data-yazdir="ogretmen"] .l-body .t-name{font-size:8px;font-weight:600}
+  /* isimler iki sütunda: en yüksek gün sütunu yarıya iner */
+  body[data-yazdir="ogretmen"] .mates{margin:1px 0 0 0;padding:3px 4px;border-radius:4px;
+    background:#f3f3f3;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 6px}
+  body[data-yazdir="ogretmen"] .mates div{font-size:7.5px;line-height:1.3;overflow-wrap:anywhere}
+  body[data-yazdir="ogretmen"] .mates .code{font-size:6px}
+  body[data-yazdir="ogretmen"] .day,
+  body[data-yazdir="ogretmen"] .lesson{break-inside:avoid}
 }
 </style>
 
@@ -700,7 +747,7 @@ function el(tag, cls, text){
   return n;
 }
 function chip(text, cls){ return el("span", "chip " + (cls || ""), text); }
-function srcLabel(src){ return src === "uyum" ? "Uyum" : "Akşam"; }
+function srcLabel(src){ return src === "uyum" ? "Uyum programı" : "Akşam programı"; }
 
 function studentMeta(name){ return state.roster.get(fold(name)) || null; }
 
@@ -949,7 +996,24 @@ q.addEventListener("keydown", function(ev){
 document.getElementById("clearStudent").addEventListener("click", function(){
   state.student = null; q.value = ""; closeAc(); renderStudent(); q.focus();
 });
-document.getElementById("printStudent").addEventListener("click", function(){ window.print(); });
+var yazdirStil = null;
+function yazdir(kip){
+  if(yazdirStil){ yazdirStil.remove(); yazdirStil = null; }
+  document.body.setAttribute("data-yazdir", kip);
+  if(kip === "ogretmen"){
+    yazdirStil = document.createElement("style");
+    yazdirStil.textContent = "@page{size:A4 landscape;margin:9mm}";
+    document.head.appendChild(yazdirStil);
+  }
+  window.print();
+}
+function yazdirTemizle(){
+  if(yazdirStil){ yazdirStil.remove(); yazdirStil = null; }
+  document.body.removeAttribute("data-yazdir");
+}
+window.addEventListener("afterprint", yazdirTemizle);
+
+document.getElementById("printStudent").addEventListener("click", function(){ yazdir("ogrenci"); });
 
 /* ==========================================================================
    7. Öğretmen paneli
@@ -1014,7 +1078,7 @@ tsel.addEventListener("change", function(){
   state.teacher = state.teachers.get(tsel.value) || null;
   renderTeacher();
 });
-document.getElementById("printTeacher").addEventListener("click", function(){ window.print(); });
+document.getElementById("printTeacher").addEventListener("click", function(){ yazdir("ogretmen"); });
 
 var gateWrap = document.getElementById("gateWrap");
 var teacherBody = document.getElementById("teacherBody");
