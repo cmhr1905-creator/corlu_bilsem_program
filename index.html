@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Çorlu BİLSEM Ders Programı</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -227,6 +229,7 @@ button.primary:hover{filter:brightness(1.06)}
 .urow{display:flex;gap:8px;width:100%;margin-top:4px}
 .urow input{text-align:center;letter-spacing:.12em}
 .ubad{color:var(--over);font-size:13.5px;font-weight:600;min-height:1.25em}
+.ubad.busy{color:var(--text-mut);font-weight:400}
 
 /* ---------- öğretmen kilidi ---------- */
 .gate{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);
@@ -1272,13 +1275,15 @@ function kilidiGoster(mesaj){
   document.getElementById("ubtn").disabled = false;
   setTimeout(function(){ upass.focus(); }, 30);
 }
-function ac(parola){
+function kilidiAc(parola){
   var blob;
   try{ blob = JSON.parse(document.getElementById("bakedEnc").textContent); }
   catch(e){ return Promise.reject(new Error("Gömülü program verisi okunamadı.")); }
   return coz(blob, parola).then(function(veri){
     BAKED = veri;
     try{ sessionStorage.setItem("bilsem-parola", parola); }catch(e){}
+    ubad.className = "ubad";
+    ubad.textContent = "";
     unlockScreen.hidden = true;
     appWrap.hidden = false;
     boot(false);
@@ -1291,13 +1296,18 @@ document.getElementById("unlockForm").addEventListener("submit", function(ev){
   var v = upass.value.trim();
   if(!v){ upass.focus(); return; }
   var btn = document.getElementById("ubtn");
-  btn.disabled = true; ubad.textContent = "Açılıyor…";
-  ac(v).catch(function(e){
+  btn.disabled = true;
+  ubad.className = "ubad busy";
+  ubad.textContent = "Açılıyor…";
+  function basarisiz(e){
     try{ sessionStorage.removeItem("bilsem-parola"); }catch(x){}
+    ubad.className = "ubad";
     kilidiGoster(e && e.name === "OperationError" ? "Parola yanlış." :
                  (e && e.message ? e.message : "Açılamadı."));
     upass.select();
-  });
+  }
+  try{ kilidiAc(v).catch(basarisiz); }
+  catch(e){ basarisiz(e); }
 });
 
 try{
@@ -1314,7 +1324,7 @@ try{
   var kayitli = null;
   try{ kayitli = sessionStorage.getItem("bilsem-parola"); }catch(e){}
   if(kayitli){
-    ac(kayitli).then(function(){
+    kilidiAc(kayitli).then(function(){
       try{ if(sessionStorage.getItem("bilsem-teacher") === "1") setUnlocked(true); }catch(e){}
     }).catch(function(){
       try{ sessionStorage.removeItem("bilsem-parola"); }catch(x){}
