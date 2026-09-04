@@ -41,6 +41,10 @@ yanlışlıkla girmesini engelleyen bir ayrımdır. Asıl koruma açılış paro
 | Grup ikiye bölünmüşse — 1-2-3. ders | **3** |
 | Grup ikiye bölünmüşse — 4-5. ders | **2** |
 
+Bir öğretmen aynı saatte birden fazla grup yürütüyorsa (örn. Cuma 16.00–18.20'de
+hem PROJE-3 hem PROJE-4) o saatler **bir kez** sayılır; program ekranında hangi
+gruplar olduğu not olarak yazar.
+
 Bir öğretmenin haftalık üst sınırı **30 saat**. Ölçer sınıra yaklaşınca renk değiştirir,
 aşarsa kırmızıya döner.
 

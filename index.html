@@ -681,8 +681,32 @@ function dersSaati(L){
   if(d >= 120) return 3;
   return 2;
 }
+/* Aynı gün içinde saatleri örtüşen dersler (öğretmenin aynı saatte
+   yürüttüğü iki proje grubu gibi) TEK ders saati sayılır. */
+function saatKumeleri(list){
+  var kumeler = [];
+  list.forEach(function(L){
+    for(var i = 0; i < kumeler.length; i++){
+      var k = kumeler[i];
+      for(var j = 0; j < k.length; j++){
+        var o = k[j];
+        if(o.dayKey === L.dayKey && o.startMin < L.endMin && L.startMin < o.endMin){
+          k.push(L); return;
+        }
+      }
+    }
+    kumeler.push([L]);
+  });
+  return kumeler;
+}
 function toplamSaat(list){
-  return list.reduce(function(n,L){ return n + (L.hours || 0); }, 0);
+  return saatKumeleri(list).reduce(function(n,k){
+    return n + k.reduce(function(m,L){ return Math.max(m, L.hours || 0); }, 0);
+  }, 0);
+}
+/* Birlikte yürüyen (örtüşen) grup kümeleri — tekil dersler hariç */
+function birlikteYuruyen(list){
+  return saatKumeleri(list).filter(function(k){ return k.length > 1; });
 }
 
 /* ==========================================================================
@@ -872,8 +896,10 @@ function renderStudent(){
     var h = el("div","hint");
     h.appendChild(el("h2","","Bir öğrenci arayın"));
     h.appendChild(el("p","","Ada yazmaya başlayın — Türkçe harfleri atlayabilirsiniz, “gulce ozsahin” de bulur. Akşam programı ile uyum programı tek haftalık çizelgede birleştirilmiştir."));
+    var kurumSaat = 0;
+    state.teachers.forEach(function(t){ kurumSaat += toplamSaat(t.lessons); });
     h.appendChild(el("p","tiny", state.students.size + " öğrenci · " + state.teachers.size +
-      " öğretmen · " + toplamSaat(state.lessons) + " haftalık ders saati"));
+      " öğretmen · " + kurumSaat + " haftalık ders saati"));
     outStudent.appendChild(h);
     return;
   }
@@ -916,10 +942,10 @@ function renderStudent(){
 
 function search(term){
   var f = fold(term);
+  if(!f) return [];
   var pool = [];
   state.students.forEach(function(s){ pool.push(s); });
   pool.sort(function(a,b){ return trSort(a.name,b.name); });
-  if(!f) return pool.slice(0,12);
   var scored = [];
   pool.forEach(function(s){
     if(s.key === f){ scored.push([-2,s]); return; }
@@ -952,6 +978,7 @@ function setAc(i){
   if(acPos >= 0) q.setAttribute("aria-activedescendant","ac-" + acPos);
 }
 function openAc(term){
+  if(!norm(term)){ closeAc(); return; }
   acItems = search(term); acPos = -1; ac.innerHTML = "";
   if(!acItems.length){ ac.appendChild(el("div","ac-empty","Eşleşen öğrenci yok.")); }
   else acItems.forEach(function(s,i){
@@ -1067,9 +1094,15 @@ function renderTeacher(){
   sum.appendChild(right);
   outTeacher.appendChild(sum);
 
-  var cl = clashes(ls);
-  if(cl.length){
-    outTeacher.appendChild(el("div","note","Dikkat: " + cl.length + " ders saat olarak çakışıyor."));
+  var birlikte = birlikteYuruyen(ls);
+  if(birlikte.length){
+    var parca = birlikte.map(function(k){
+      return (DAY_PRETTY[k[0].dayKey] || k[0].dayKey) + " " + k[0].timeText + " (" +
+             k.map(function(L){ return L.program; }).join(" + ") + ")";
+    });
+    outTeacher.appendChild(el("div","note",
+      "Aynı saatte birlikte yürüyen gruplar: " + parca.join(", ") +
+      ". Bu saatler ders saati toplamında bir kez sayıldı."));
   }
   outTeacher.appendChild(weekView(ls, { mode:"teacher" }));
 }
