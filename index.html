@@ -38,6 +38,7 @@
   --ok:#4C8A22; --warn:#B26A00; --over:#B23124;
   --shadow:0 1px 2px rgba(11,58,60,.07), 0 8px 24px -16px rgba(11,58,60,.4);
   --focus:#0B7A7A;
+  --saat-birim:0px;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -58,6 +59,7 @@
     --ok:#8FCB63; --warn:#E5A93F; --over:#F0796A;
     --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 28px -18px rgba(0,0,0,.9);
     --focus:#4FD4D4;
+    --saat-birim:0px;
   }
 }
 :root[data-theme="dark"]{
@@ -78,6 +80,7 @@
   --ok:#8FCB63; --warn:#E5A93F; --over:#F0796A;
   --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 28px -18px rgba(0,0,0,.9);
   --focus:#4FD4D4;
+  --saat-birim:0px;
 }
 
 *{box-sizing:border-box}
@@ -87,7 +90,7 @@ body{
   font-family:"Source Sans 3", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size:16px; line-height:1.5; -webkit-font-smoothing:antialiased;
 }
-.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 72px;display:flex;flex-direction:column;gap:22px}
+.wrap{max-width:1340px;margin:0 auto;padding:28px 20px 72px;display:flex;flex-direction:column;gap:22px}
 
 /* ---------- başlık + sekmeler ---------- */
 .masthead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px}
@@ -186,7 +189,30 @@ button.primary:hover{filter:brightness(1.06)}
 .chip.ghost{background:transparent;color:var(--text-mut);border:1px solid var(--line)}
 
 /* ---------- hafta ---------- */
-.week{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+/* Dar ekranda kartlar alt alta; masaüstünde günler tek sırada yan yana.
+   Sütun sayısı gün sayısından gelir (--gun), böylece Cuma/Cumartesi alta düşmez. */
+.week{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+@media (min-width:960px){
+  /* 60px = en küçük kutunun (2 ders) içerik yüksekliğinin yarısı — dar
+     sütunda öğretmen adı iki satıra taşısa bile oran bozulmasın diye pay var;
+     böylece 2/3/5 ders kutuları tam 2×/3×/5× oranında olur */
+  .week{grid-template-columns:repeat(var(--gun,5),minmax(0,1fr));gap:10px;--saat-birim:60px}
+  .week .day-hd{padding:9px 12px}
+  /* dar sütunda içerik sıkışır ki kutu boyu ders saatini gösterebilsin */
+  .week .lesson{padding:9px 12px;gap:3px}
+  .week .l-top{gap:6px}
+  .week .l-top .chip.ghost{display:none}
+  .week .time{font-size:11.5px;padding-left:7px}
+  .week .slot{font-size:9px}
+  .week .chip{font-size:10px;padding:2px 6px}
+  .week .hours{font-size:10px}
+  .week .l-body{padding-left:9px;gap:5px}
+  .week .t-name{font-size:13.5px;line-height:1.25}
+  .week .t-branch{font-size:11px}
+  .week .mates-toggle{padding-left:9px;font-size:9.5px}
+  .week .mates{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));padding:7px 9px}
+  .week .mates div{font-size:12px}
+}
 .day{background:var(--surface);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);
      overflow:hidden;display:flex;flex-direction:column}
 .day-hd{padding:11px 15px;border-bottom:1px solid var(--line-soft);background:var(--surface-2);
@@ -197,7 +223,9 @@ button.primary:hover{filter:brightness(1.06)}
 .day.free .day-hd{background:transparent}
 .free-note{padding:14px 15px;color:var(--text-mut);font-size:14px;font-style:italic}
 
-.lesson{padding:12px 15px;border-bottom:1px solid var(--line-soft);display:flex;flex-direction:column;gap:5px}
+/* Kutunun boyu ders saatiyle orantılı: 2 ders 2×, 3 ders 3×, 5 ders 5× */
+.lesson{padding:12px 15px;border-bottom:1px solid var(--line-soft);display:flex;flex-direction:column;gap:5px;
+        min-height:calc(var(--saat,1) * var(--saat-birim))}
 .lesson:last-child{border-bottom:0}
 .lesson.clickable{cursor:pointer}
 .lesson.clickable:hover{background:var(--surface-2)}
@@ -277,7 +305,7 @@ button.primary:hover{filter:brightness(1.06)}
         --on-accent:#fff;--warm:#333;--ok:#444;--warn:#444;--over:#000;
         --f-destek:#000;--f-destek-bg:#ededed;--f-byf:#000;--f-byf-bg:#ededed;
         --f-oyg:#000;--f-oyg-bg:#ededed;--f-proje:#000;--f-proje-bg:#ededed;
-        --f-uyum:#000;--f-uyum-bg:#ededed;--f-muzik:#000;--f-muzik-bg:#ededed;--f-atolye:#000;--f-atolye-bg:#ededed;
+        --f-uyum:#000;--f-uyum-bg:#ededed;--saat-birim:0px;--f-muzik:#000;--f-muzik-bg:#ededed;--f-atolye:#000;--f-atolye-bg:#ededed;
         --f-kulup:#000;--f-kulup-bg:#ededed;--f-diger:#000;--f-diger-bg:#ededed}
   .no-print{display:none !important}
   .wrap{padding:0;gap:12px;max-width:none}
@@ -858,6 +886,7 @@ function studentMeta(name){ return state.roster.get(fold(name)) || null; }
 function lessonCard(L, opts){
   opts = opts || {};
   var card = el("div","lesson");
+  card.style.setProperty("--saat", L.hours || 1);
   var top = el("div","l-top");
   top.appendChild(el("div","time", L.timeText || "—"));
   var bits = [];
@@ -921,6 +950,8 @@ function lessonCard(L, opts){
 
 function weekView(lessons, opts){
   var week = el("div","week");
+  var gunSayisi = state.days.length;
+  week.style.setProperty("--gun", gunSayisi > 6 ? 3 : Math.max(1, gunSayisi));
   state.days.forEach(function(dk){
     var mine = lessons.filter(function(L){ return L.dayKey === dk; })
                       .sort(function(a,b){ return a.startMin - b.startMin; });
