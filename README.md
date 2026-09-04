@@ -137,6 +137,32 @@ Excel'de düzeltip yukarıdaki 2. yolla yükleyin, ikisi de kendiliğinden düze
 
 ---
 
+## Site engelliyse (FATİH / MEB ağı) — çevrimdışı kullanım
+
+`index.html` **tek başına çalışan bir dosyadır.** Yazı tipleri, logo, program
+verisi ve kodun tamamı dosyanın içinde gömülüdür. İnternet olmadan da,
+`github.io` engelliyken de birebir aynı çalışır:
+
+1. `index.html` dosyasını indirin (depoda **Code → Download ZIP**, ya da
+   dosyaya tıklayıp **Download raw file**).
+2. E-posta, WhatsApp, USB ya da okulun dosya paylaşımıyla dağıtın.
+3. Öğretmen dosyayı masaüstüne kaydeder, çift tıklar. Parola ekranı gelir,
+   her şey normal çalışır.
+
+Chrome, Safari, Edge ve Firefox'ta `file://` ile açıldığında şifre çözme
+(Web Crypto) çalışır — test edildi.
+
+**Çevrimdışıyken çalışmayan tek şey:** öğretmen panelindeki Excel yükleme
+(SheetJS kütüphanesi CDN'den geliyor). Programın görüntülenmesi, arama,
+öğretmen programları ve yazdırma tam çalışır. Zaten kalıcı güncelleme
+`araclar/guncelle.py` ile yapılıyor.
+
+**Kalıcı çözüm için:** İl Millî Eğitim Müdürlüğü Bilgi İşlem birimine
+adresin erişime açılması için başvurulabilir. `github.io` genelde alan adı
+kategorisi nedeniyle topluca engellenir, tek tek beyaz listeye alınabilir.
+
+---
+
 ## Şifreleme nasıl çalışıyor
 
 - Veri: `{aksam, uyum}` JSON'u → **AES-256-GCM**
