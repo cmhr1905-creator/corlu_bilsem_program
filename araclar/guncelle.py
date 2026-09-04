@@ -8,6 +8,12 @@ Kullanım:
     python3 araclar/guncelle.py --parola-degistir            (veriye dokunmadan parolayı değiştir)
 
 Seçenekler:
+    --sayfa AD              akşam biçimli dosyada hangi sayfa alınsın
+                            (verilmezse en dolu sayfa seçilir)
+    --ek AD                 gün-sütunlu ek program olarak ekle (ör. --ek Müzik)
+    --ogretmen AD           ek programın öğretmeni
+    --brans BRANŞ           ek programın branşı
+    --program AD            ek programın ders adı (verilmezse --ek değeri)
     --parola PAROLA         mevcut parola (verilmezse sorulur)
     --yeni-parola PAROLA    veriyi yeni parolayla yeniden şifreler
     --parola-degistir       xlsx vermeden yalnız parolayı değiştirir
@@ -138,6 +144,7 @@ def gom(html, sifreli):
 def main(argv):
     parola = yeni_parola = None
     yalniz_parola = False
+    sayfa_secim = ek_ad = ek_ogretmen = ek_brans = ek_program = None
     yollar = []
     i = 0
     while i < len(argv):
@@ -146,6 +153,16 @@ def main(argv):
             i += 1; parola = argv[i]
         elif a == '--yeni-parola':
             i += 1; yeni_parola = argv[i]
+        elif a == '--sayfa':
+            i += 1; sayfa_secim = argv[i]
+        elif a == '--ek':
+            i += 1; ek_ad = argv[i]
+        elif a == '--ogretmen':
+            i += 1; ek_ogretmen = argv[i]
+        elif a == '--brans':
+            i += 1; ek_brans = argv[i]
+        elif a == '--program':
+            i += 1; ek_program = argv[i]
         elif a == '--parola-degistir':
             yalniz_parola = True
         elif a in ('-h', '--help'):
@@ -170,21 +187,39 @@ def main(argv):
         sayfalar = sayfalari_oku(yol)
 
         n_uyum = uyum_dosyasi(sayfalar)
+        if ek_ad:
+            veri.setdefault('ek', [])
+            veri['ek'] = [e for e in veri['ek'] if e.get('ad') != ek_ad]
+            veri['ek'].append({'ad': ek_ad, 'kaynak': os.path.basename(yol),
+                               'ogretmen': ek_ogretmen or '', 'brans': ek_brans or '',
+                               'program': ek_program or ek_ad,
+                               'grid': (sayfalar[0]['grid'] if sayfalar else [])})
+            degisen.append('EK    <- %s  (ad: %s, ogretmen: %s)'
+                           % (os.path.basename(yol), ek_ad, ek_ogretmen or '-'))
+            continue
+
         if n_uyum:
             veri['uyum'] = [{'name': s['name'], 'hidden': s['hidden'], 'grid': s['grid']} for s in sayfalar]
             degisen.append('UYUM  <- %s  (%d ogretmen sayfasi, %d sayfa)'
                            % (os.path.basename(yol), n_uyum, len(sayfalar)))
             continue
 
-        en_iyi = None
+        adaylar = []
         for s in sayfalar:
+            if sayfa_secim and s['name'] != sayfa_secim:
+                continue
             n = aksam_sayfasi(s['grid'])
-            if n and (en_iyi is None or n > en_iyi[0]):
-                en_iyi = (n, s)
-        if en_iyi:
-            veri['aksam'] = en_iyi[1]['grid']
-            degisen.append('AKSAM <- %s  (sayfa: %s, ~%d isim hucresi)'
-                           % (os.path.basename(yol), en_iyi[1]['name'], en_iyi[0]))
+            if n:
+                adaylar.append((n, s))
+        if adaylar:
+            if not sayfa_secim:
+                adaylar = [max(adaylar, key=lambda x: x[0])]
+            veri.setdefault('aksam', [])
+            ad = os.path.basename(yol)
+            veri['aksam'] = [k for k in veri['aksam'] if k.get('kaynak') != ad]
+            for n, s in adaylar:
+                veri['aksam'].append({'kaynak': ad, 'sayfa': s['name'], 'grid': s['grid']})
+                degisen.append('AKSAM <- %s  (sayfa: %s, ~%d isim hucresi)' % (ad, s['name'], n))
             continue
 
         raise SystemExit('HATA: "%s" icinde taninan bir program yok.\n'

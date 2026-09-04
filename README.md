@@ -59,6 +59,28 @@ o tarayıcıda saklar. **Dosya hiçbir yere gönderilmez.**
 Bu değişiklik sadece o tarayıcıda geçerlidir; başkaları eski programı görmeye devam eder.
 Geri almak için: “Yerleşik programlara dön”.
 
+### Veri kaynakları
+
+Uygulama üç tür kaynağı birleştirir:
+
+| Tür | Biçim | Örnek |
+|---|---|---|
+| `aksam` | sütun başına bir öğretmen | ana program, PROJE-1 (9/hazırlık) |
+| `uyum` | sayfa başına bir öğretmen + SIRALI künyesi | uyum programı |
+| `ek` | günler sütun, tek öğretmen | Müzik |
+
+`ek` biçimindeki dosyalarda öğretmen adı, program adı ve ders saatleri **bulunmaz**;
+bunlar yükleme sırasında elle verilir:
+
+```bash
+python3 araclar/guncelle.py --ek "Müzik" --ogretmen "Dr. Mustafa Cem Kaynar" \
+        --brans MÜZİK --program MÜZİK ~/Downloads/muzik.xlsx
+```
+
+Bir dosyadan belirli bir sayfayı almak için `--sayfa "PROJE-1"`.
+Aynı `kaynak` (dosya adı) ile yapılan yükleme o dosyanın önceki kaydını değiştirir,
+diğer kaynaklara dokunmaz.
+
 ### 2. Herkesin gördüğü sürümü güncellemek (kalıcı)
 
 ```bash
