@@ -146,7 +146,33 @@ def gom(html, sifreli):
     return desen.sub(lambda m: m.group(1) + sifreli + m.group(3), html, count=1)
 
 
+def kaynak_etiketi_guncelle(html, veri, uyum_adi=None):
+    """Sayfadaki BAKED_KAYNAK blogunu gomulu verinin GERCEK dosya adlariyla
+    yeniden yazar. Elle tutuldugu icin bayatliyordu: "Veri kaynagi" paneli
+    aylarca eski dosya adini gosterdi.
+    NOT: uyum girdileri dosya adi TASIMAZ (sayfa listesidir); bu kosuda uyum
+    dosyasi gomulmediyse sayfadaki mevcut ad korunur."""
+    desen = re.compile(r'var BAKED_KAYNAK = \{.*?\n\};', re.S)
+    m = desen.search(html)
+    if not m:
+        raise SystemExit('HATA: index.html icinde BAKED_KAYNAK blogu bulunamadi.')
+    if uyum_adi is None:
+        eski_uyum = re.search(r'uyum:\s*\{\s*name:\s*"((?:[^"\\]|\\.)*)"', m.group(0))
+        uyum_adi = json.loads('"%s"' % eski_uyum.group(1)) if eski_uyum else ''
+    aksam = (veri.get('aksam') or [{}])[0]
+    yeni_blok = (
+        'var BAKED_KAYNAK = {\n'
+        '  aksam:{ name:%s, sheet:%s },\n'
+        '  uyum:{ name:%s }\n'
+        '};'
+        % (json.dumps(aksam.get('kaynak', ''), ensure_ascii=False),
+           json.dumps(aksam.get('sayfa', ''), ensure_ascii=False),
+           json.dumps(uyum_adi, ensure_ascii=False)))
+    return desen.sub(lambda mm: yeni_blok, html, count=1)
+
+
 def main(argv):
+    uyum_dosya_adi = None
     parola = yeni_parola = None
     yalniz_parola = ayri_kaynak = False
     sayfa_secim = ek_ad = ek_ogretmen = ek_brans = ek_program = None
@@ -232,6 +258,7 @@ def main(argv):
 
         if n_uyum:
             veri['uyum'] = [{'name': s['name'], 'hidden': s['hidden'], 'grid': s['grid']} for s in sayfalar]
+            uyum_dosya_adi = os.path.basename(yol)
             degisen.append('UYUM  <- %s  (%d ogretmen sayfasi, %d sayfa)'
                            % (os.path.basename(yol), n_uyum, len(sayfalar)))
             continue
@@ -282,6 +309,7 @@ def main(argv):
     sifreli = node_calistir([kullanilan], json.dumps(veri, ensure_ascii=False).encode('utf-8')).decode('utf-8')
     json.loads(sifreli)
     html = gom(html, sifreli)
+    html = kaynak_etiketi_guncelle(html, veri, uyum_dosya_adi)
     open(HTML, 'w', encoding='utf-8').write(html)
 
     print('index.html guncellendi:')
