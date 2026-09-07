@@ -17,6 +17,8 @@ Seçenekler:
     --parola PAROLA         mevcut parola (verilmezse sorulur)
     --yeni-parola PAROLA    veriyi yeni parolayla yeniden şifreler
     --parola-degistir       xlsx vermeden yalnız parolayı değiştirir
+    --ayri                  aynı sayfa adını taşısa bile eskisini silme,
+                            ayrı bir kaynak olarak ekle
 
 Hangi dosyanın hangi program olduğunu kendi anlar; yalnızca verdiğiniz
 dosyaların karşılığını değiştirir, ötekine dokunmaz.
@@ -143,7 +145,7 @@ def gom(html, sifreli):
 
 def main(argv):
     parola = yeni_parola = None
-    yalniz_parola = False
+    yalniz_parola = ayri_kaynak = False
     sayfa_secim = ek_ad = ek_ogretmen = ek_brans = ek_program = None
     yollar = []
     i = 0
@@ -165,6 +167,8 @@ def main(argv):
             i += 1; ek_program = argv[i]
         elif a == '--parola-degistir':
             yalniz_parola = True
+        elif a == '--ayri':
+            ayri_kaynak = True
         elif a in ('-h', '--help'):
             raise SystemExit(__doc__)
         else:
@@ -216,7 +220,21 @@ def main(argv):
                 adaylar = [max(adaylar, key=lambda x: x[0])]
             veri.setdefault('aksam', [])
             ad = os.path.basename(yol)
-            veri['aksam'] = [k for k in veri['aksam'] if k.get('kaynak') != ad]
+            yeni_sayfalar = set(s['name'] for _, s in adaylar)
+            # Ayni dosya adi VEYA ayni sayfa adi = ayni program; degistir.
+            # (Tarayici indirirken "(1)", "(2)" ekledigi icin dosya adina
+            #  guvenilmez; adi degisen dosya eskisini silmeden eklenirse
+            #  butun dersler iki kez gorunur.)
+            if ayri_kaynak:
+                kalan = [k for k in veri['aksam'] if k.get('kaynak') != ad]
+            else:
+                kalan = [k for k in veri['aksam']
+                         if k.get('kaynak') != ad and k.get('sayfa') not in yeni_sayfalar]
+            for k in veri['aksam']:
+                if k not in kalan and k.get('kaynak') != ad:
+                    degisen.append('DEGISTI  %s  ->  %s  (sayfa: %s)'
+                                   % (k.get('kaynak'), ad, k.get('sayfa')))
+            veri['aksam'] = kalan
             for n, s in adaylar:
                 veri['aksam'].append({'kaynak': ad, 'sayfa': s['name'], 'grid': s['grid']})
                 degisen.append('AKSAM <- %s  (sayfa: %s, ~%d isim hucresi)' % (ad, s['name'], n))
