@@ -346,7 +346,14 @@ button.primary:hover{filter:brightness(1.06)}
      body'nin 8px tarayıcı kenar boşluğu sıfırlanmazsa 100vh taşar ve ikinci
      boş sayfa çıkar; kenar boşluğunu zaten @page margin veriyor. */
   body[data-yazdir="ogretmen"]{margin:0}
-  body[data-yazdir="ogretmen"] .wrap{display:flex;flex-direction:column;min-height:100vh}
+  /* 100vh baskıda güvenilir çözülmüyor; sayfa alanını mm ile veriyoruz:
+     yatay A4 210mm - 2x9mm kenar boşluğu = 192mm */
+  body[data-yazdir="ogretmen"] .wrap{display:flex;flex-direction:column;min-height:192mm}
+  /* .week ile .wrap arasındaki kapsayıcılar display:block; esnemezlerse
+     .wrap uzar ama gün kutuları içeride kısa kalır (boşluk aşağıda birikir) */
+  body[data-yazdir="ogretmen"] #panelTeacher,
+  body[data-yazdir="ogretmen"] #teacherBody,
+  body[data-yazdir="ogretmen"] #outTeacher{display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
   body[data-yazdir="ogretmen"] .week{display:flex;flex-wrap:nowrap;gap:5px;align-items:stretch;flex:1 1 auto}
   body[data-yazdir="ogretmen"] .day{flex:1 1 0;min-width:0;border-radius:5px;border-color:#999}
   body[data-yazdir="ogretmen"] .day-hd{padding:3px 6px;background:#eee}
