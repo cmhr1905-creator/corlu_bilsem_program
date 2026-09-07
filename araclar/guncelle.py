@@ -19,6 +19,9 @@ Seçenekler:
     --parola-degistir       xlsx vermeden yalnız parolayı değiştirir
     --ayri                  aynı sayfa adını taşısa bile eskisini silme,
                             ayrı bir kaynak olarak ekle
+    --cikar AD              gömülü veriden bir programı SİLER (sayfa adı,
+                            dosya adı ya da ek program adı verilebilir);
+                            xlsx vermeye gerek yok
 
 Hangi dosyanın hangi program olduğunu kendi anlar; yalnızca verdiğiniz
 dosyaların karşılığını değiştirir, ötekine dokunmaz.
@@ -147,6 +150,7 @@ def main(argv):
     parola = yeni_parola = None
     yalniz_parola = ayri_kaynak = False
     sayfa_secim = ek_ad = ek_ogretmen = ek_brans = ek_program = None
+    cikarilacak = []
     yollar = []
     i = 0
     while i < len(argv):
@@ -169,13 +173,15 @@ def main(argv):
             yalniz_parola = True
         elif a == '--ayri':
             ayri_kaynak = True
+        elif a == '--cikar':
+            i += 1; cikarilacak.append(argv[i])
         elif a in ('-h', '--help'):
             raise SystemExit(__doc__)
         else:
             yollar.append(a)
         i += 1
 
-    if not yollar and not yalniz_parola and not yeni_parola:
+    if not yollar and not yalniz_parola and not yeni_parola and not cikarilacak:
         raise SystemExit(__doc__)
 
     html = open(HTML, encoding='utf-8').read()
@@ -184,6 +190,28 @@ def main(argv):
     veri = json.loads(node_calistir(['--coz', parola], sifreli_blok_oku(html).encode('utf-8')))
 
     degisen = []
+    for ad in cikarilacak:
+        bulundu = False
+        kalan = []
+        for k in veri.get('aksam', []):
+            if k.get('sayfa') == ad or k.get('kaynak') == ad:
+                degisen.append('CIKARILDI  aksam: %s / %s' % (k.get('kaynak'), k.get('sayfa')))
+                bulundu = True
+            else:
+                kalan.append(k)
+        veri['aksam'] = kalan
+        kalan_ek = []
+        for e in veri.get('ek', []):
+            if e.get('ad') == ad or e.get('kaynak') == ad:
+                degisen.append('CIKARILDI  ek: %s' % e.get('ad'))
+                bulundu = True
+            else:
+                kalan_ek.append(e)
+        if 'ek' in veri:
+            veri['ek'] = kalan_ek
+        if not bulundu:
+            raise SystemExit('HATA: cikarilacak program bulunamadi: %r' % ad)
+
     for yol in yollar:
         yol = os.path.expanduser(yol)
         if not os.path.exists(yol):
