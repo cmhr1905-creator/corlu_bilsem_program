@@ -31,13 +31,15 @@ const sunucu = http.createServer((rq, rs) => {
 });
 await new Promise(r => sunucu.listen(WEB, '127.0.0.1', r));
 
-try { execSync(`pkill -f "remote-debugging-port=${CDP}"`); } catch (e) {}
-fs.rmSync(PROF, { recursive: true, force: true });
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+/* Öldürülen Chrome profile yazmayı hemen bırakmıyor: beklemeden silmek
+   ENOTEMPTY veriyordu. */
+try { execSync(`pkill -f "remote-debugging-port=${CDP}"`); await sleep(500); } catch (e) {}
+fs.rmSync(PROF, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 const chrome = spawn(CHROME, ['--headless=new', '--remote-debugging-port=' + CDP,
   '--user-data-dir=' + PROF, '--no-first-run', '--disable-gpu',
   `http://127.0.0.1:${WEB}/index.html`], { stdio: 'ignore' });
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 const list = () => new Promise((res, rej) => {
   http.get({ host: '127.0.0.1', port: CDP, path: '/json/list' }, r => {
     let b = ''; r.on('data', c => b += c);
@@ -79,8 +81,10 @@ const prog = `(function(){var s=state.students.get(fold(${JSON.stringify(OGR)}))
 
 console.log('\n1) Gömülü yamalar açılışta biniyor mu');
 ol('513 öğrenci yüklendi', await ev('state.students.size') === 513, await ev('state.students.size'));
-ol('3 gömülü düzeltme var', (await ev('state.yamaSonuc.length')) === 3);
-ol('üçü de uygulandı', (await ev('state.yamaSonuc.filter(function(x){return x.ok;}).length')) === 3,
+/* Gömülü yama sayısı zamanla değişir; sayıyı veriden AL, sabitleme. */
+const N = await ev('state.yamaSonuc.length');
+ol('gömülü düzeltme var (' + N + ')', N >= 3);
+ol('hepsi uygulandı', (await ev('state.yamaSonuc.filter(function(x){return x.ok;}).length')) === N,
    await ev('state.yamaSonuc.map(function(x){return x.ok?"ok":x.hata;})'));
 const p0 = await ev(prog);
 ol('Gülce: Salı yok, Cuma Emine+İlkay, Cumartesi Burcu+Tülay',
@@ -96,8 +100,8 @@ await ev(`(function(){document.getElementById("fixOpen").click();
   document.getElementById("fpass").value=${JSON.stringify(YONETICI)};
   document.getElementById("fixForm").dispatchEvent(new Event("submit",{cancelable:true,bubbles:true}));})()`);
 ol('doğru şifreyle açıldı', await ev('document.getElementById("fixSection").hidden') === false);
-ol('liste 3 satır çizdi', await ev('document.querySelectorAll("#fixList .yrow").length') === 3);
-ol('üçü de "yayında" diyor',
+ol('liste ' + N + ' satır çizdi', await ev('document.querySelectorAll("#fixList .yrow").length') === N);
+ol('hepsi "yayında" diyor',
    await ev('[].slice.call(document.querySelectorAll("#fixList .durum")).every(function(d){return d.textContent==="yayında";})'));
 
 console.log('\n3) Yeni düzeltme yazma');
@@ -118,7 +122,7 @@ await ev(`[].slice.call(document.querySelectorAll("#fixPrev button")).filter(fun
 await sleep(200);
 const p1 = await ev(prog);
 ol('uygulandı: Cumartesi 4-5 düştü', p1.length === 3 && !p1.some(x => x.indexOf('CUMARTESİ 4-5') === 0), p1);
-ol('liste 4 satıra çıktı', await ev('document.querySelectorAll("#fixList .yrow").length') === 4);
+ol('liste bir satır uzadı', await ev('document.querySelectorAll("#fixList .yrow").length') === N + 1);
 ol('yenisi "bu tarayıcıda" diyor',
    await ev('[].slice.call(document.querySelectorAll("#fixList .durum")).map(function(d){return d.textContent;}).indexOf("bu tarayıcıda")>=0'));
 
@@ -135,7 +139,7 @@ console.log('\n5) Yama metni');
 const metin = await ev(`(function(){return JSON.stringify(yamaListesi().map(function(y){
   var k={}; for(var a in y) if(a!=="gomulu") k[a]=y[a]; return k;}));})()`);
 let coz = null; try { coz = JSON.parse(metin); } catch (e) {}
-ol('kopyalanacak metin geçerli JSON ve 3 kayıt', Array.isArray(coz) && coz.length === 3, coz && coz.length);
+ol('kopyalanacak metin geçerli JSON ve ' + N + ' kayıt', Array.isArray(coz) && coz.length === N, coz && coz.length);
 ol('her kaydın kimliği ve işlemi var', coz && coz.every(y => y.id && y.op && y.ogrenci && y.gun));
 
 console.log('\n6) Gömülü yamayı geri alma (yayından düşürme)');
@@ -144,7 +148,7 @@ await ev(`[].slice.call(document.querySelectorAll("#fixList .yrow")).filter(func
 await sleep(200);
 const p3 = await ev(prog);
 ol('Salı yaması iptal edilince Salı dersleri geri geldi', p3.some(x => x.indexOf('SALI') === 0), p3);
-ol('kopyalanacak listede artık 2 kayıt var', (await ev('yamaListesi().length')) === 2);
+ol('kopyalanacak listede bir eksik kayıt var', (await ev('yamaListesi().length')) === N - 1);
 
 /* temizlik: test izlerini bırakma */
 await ev('localStorage.removeItem("corlu-bilsem-yama-v1")');
