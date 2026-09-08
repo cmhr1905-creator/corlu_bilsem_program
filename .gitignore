@@ -6,3 +6,6 @@ __pycache__/
 # Üretilen çıktılar ÖĞRENCİ ADI içerir — depo public, asla girmesin
 *.pdf
 baski-*.png
+
+# Yama metni ÖĞRENCİ ADI içerir — depo public, asla girmesin
+yama*.json

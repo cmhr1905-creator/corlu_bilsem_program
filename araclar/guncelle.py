@@ -22,6 +22,13 @@ Seçenekler:
     --cikar AD              gömülü veriden bir programı SİLER (sayfa adı,
                             dosya adı ya da ek program adı verilebilir);
                             xlsx vermeye gerek yok
+    --yama DOSYA            uygulamadaki "Program düzeltme" bölümünden
+                            kopyalanan yama listesini (JSON) gömer;
+                            "-" verilirse stdin'den okur. Liste TÜMÜYLE
+                            değiştirilir — kopyalanan metin zaten yürürlükteki
+                            listenin tamamıdır.
+    --yama-liste            gömülü yamaları yazdırır, hiçbir şey değiştirmez
+    --yama-sil              gömülü yama listesini boşaltır
 
 Hangi dosyanın hangi program olduğunu kendi anlar; yalnızca verdiğiniz
 dosyaların karşılığını değiştirir, ötekine dokunmaz.
@@ -146,6 +153,64 @@ def gom(html, sifreli):
     return desen.sub(lambda m: m.group(1) + sifreli + m.group(3), html, count=1)
 
 
+YAMA_ALANLARI = ('id', 'op', 'ogrenci', 'gun', 'blok', 'slot', 'ogretmen',
+                 'program', 'kaynak', 'tarih')
+
+
+def yama_oku(yol):
+    """Uygulamanin 'Yama metnini kopyala' dugmesinin verdigi JSON dizisi."""
+    try:
+        ham = sys.stdin.read() if yol == '-' else open(os.path.expanduser(yol), encoding='utf-8').read()
+    except OSError as e:
+        raise SystemExit('HATA: yama dosyasi okunamadi: %s' % e)
+    ham = ham.strip()
+    if not ham:
+        return []
+    try:
+        veri = json.loads(ham)
+    except ValueError as e:
+        raise SystemExit('HATA: yama metni gecerli JSON degil (%s).\n'
+                         '  Uygulamada "Yama metnini kopyala" ile kopyalanan metni oldugu gibi verin.' % e)
+    if not isinstance(veri, list):
+        raise SystemExit('HATA: yama metni bir JSON DIZISI olmali.')
+    return veri
+
+
+def yama_dogrula(liste):
+    gecerli_op = ('sil', 'tasi', 'ekle')
+    gorulen = set()
+    for n, y in enumerate(liste, 1):
+        if not isinstance(y, dict):
+            raise SystemExit('HATA: %d. yama bir nesne degil.' % n)
+        for alan in ('id', 'op', 'ogrenci', 'gun'):
+            if not y.get(alan):
+                raise SystemExit('HATA: %d. yamada "%s" eksik.' % (n, alan))
+        if y['op'] not in gecerli_op:
+            raise SystemExit('HATA: %d. yamada bilinmeyen islem: %r (beklenen: %s)'
+                             % (n, y['op'], ', '.join(gecerli_op)))
+        if y['op'] != 'sil' and not y.get('ogretmen'):
+            raise SystemExit('HATA: %d. yamada hedef ogretmen yok.' % n)
+        if y['id'] in gorulen:
+            raise SystemExit('HATA: %d. yamanin kimligi tekrar ediyor: %s' % (n, y['id']))
+        gorulen.add(y['id'])
+        for alan in list(y):
+            if alan not in YAMA_ALANLARI:
+                del y[alan]
+
+
+def yamalar_gomulu(veri):
+    liste = veri.get('yamalar') or []
+    if not liste:
+        print('Gomulu yama yok.')
+        return
+    print('%d gomulu duzeltme:' % len(liste))
+    for y in liste:
+        print('  %-24s %-10s %-14s %-12s %s'
+              % (y.get('ogrenci', ''), y.get('gun', ''), y.get('blok') or '-',
+                 y.get('slot') or 'tum gun',
+                 '(kaldir)' if y.get('op') == 'sil' else '-> ' + y.get('ogretmen', '')))
+
+
 def kaynak_etiketi_guncelle(html, veri, uyum_adi=None):
     """Sayfadaki BAKED_KAYNAK blogunu gomulu verinin GERCEK dosya adlariyla
     yeniden yazar. Elle tutuldugu icin bayatliyordu: "Veri kaynagi" paneli
@@ -177,6 +242,8 @@ def main(argv):
     yalniz_parola = ayri_kaynak = False
     sayfa_secim = ek_ad = ek_ogretmen = ek_brans = ek_program = None
     cikarilacak = []
+    yama_dosya = None
+    yama_liste = yama_sil = False
     yollar = []
     i = 0
     while i < len(argv):
@@ -201,13 +268,20 @@ def main(argv):
             ayri_kaynak = True
         elif a == '--cikar':
             i += 1; cikarilacak.append(argv[i])
+        elif a == '--yama':
+            i += 1; yama_dosya = argv[i]
+        elif a == '--yama-liste':
+            yama_liste = True
+        elif a == '--yama-sil':
+            yama_sil = True
         elif a in ('-h', '--help'):
             raise SystemExit(__doc__)
         else:
             yollar.append(a)
         i += 1
 
-    if not yollar and not yalniz_parola and not yeni_parola and not cikarilacak:
+    if (not yollar and not yalniz_parola and not yeni_parola and not cikarilacak
+            and yama_dosya is None and not yama_liste and not yama_sil):
         raise SystemExit(__doc__)
 
     html = open(HTML, encoding='utf-8').read()
@@ -216,6 +290,30 @@ def main(argv):
     veri = json.loads(node_calistir(['--coz', parola], sifreli_blok_oku(html).encode('utf-8')))
 
     degisen = []
+
+    if yama_liste:
+        yamalar_gomulu(veri)
+        return
+
+    if yama_sil:
+        onceki = len(veri.get('yamalar') or [])
+        veri['yamalar'] = []
+        degisen.append('YAMA  <- (bosaltildi, %d duzeltme dustu)' % onceki)
+
+    if yama_dosya is not None:
+        yeni = yama_oku(yama_dosya)
+        yama_dogrula(yeni)
+        onceki = len(veri.get('yamalar') or [])
+        veri['yamalar'] = yeni
+        degisen.append('YAMA  <- %s  (%d duzeltme; onceki %d)'
+                       % ('stdin' if yama_dosya == '-' else os.path.basename(yama_dosya),
+                          len(yeni), onceki))
+        for y in yeni:
+            degisen.append('        %s  %s %s %s%s'
+                           % (y.get('ogrenci',''), y.get('gun',''),
+                              (y.get('blok') or '').lower(), y.get('slot') or 'tum gun',
+                              ('  -> ' + y.get('ogretmen','')) if y.get('op') != 'sil' else '  (kaldir)'))
+
     for ad in cikarilacak:
         bulundu = False
         kalan = []

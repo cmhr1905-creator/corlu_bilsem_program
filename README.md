@@ -99,7 +99,56 @@ Araç hangi dosyanın hangi program olduğunu kendi bulur, yalnız onun verisini
 ötekine dokunmaz. Şifreyi çözer, veriyi tazeler, yeniden şifreler.
 Gerekenler: **Python 3** ve **Node.js** (`brew install node`).
 
-### 3. Excel'in yapısı tamamen değişirse
+### 3. Tek tük düzeltme — Excel'e dokunmadan (yama)
+
+Bir öğrenci gruptan çıktı, başka öğretmene geçti… Bunun için Excel'i yeniden
+üretmeye gerek yok. **Öğrenci sekmesi → “Program düzeltme”** (yönetici şifresi
+ister) ve değişikliği gündelik dille yazın:
+
+```
+Gülce Bahar Özşahin:
+salı dersi olmayacak
+cuma dersleri bilişim Emine ve tek tas İlkay
+```
+
+Uygulama ne anladığını **önce gösterir**, siz onaylayınca uygular. Öğretmeni
+adından ya da branşından yazabilirsiniz (`tek tas ilkay` → İlkay Tuncel);
+ders saati yazmazsanız öğretmenler yazılış sırasına göre o günün saatlerine
+dağıtılır — ama yalnız **gerçekten ders verdikleri** saatlere; sıra tutmazsa
+uygulama itiraz eder, sessizce yanlış yere koymaz.
+
+Anlaşılan komutlar:
+
+| Yazdığınız | Ne olur |
+|---|---|
+| `salı sil` · `salı dersi olmayacak` | o gün bütün dersleri kalkar |
+| `cuma 1-2-3 kaldır` | yalnız o ders saati kalkar |
+| `cuma 4-5 → İlkay Tuncel` | o saatteki dersi bu öğretmene taşır |
+| `cuma Emine ve İlkay` | 1-2-3 Emine, 4-5 İlkay |
+| `ctesi sabah Burcu ve Tülay` | cumartesi sabahı için aynısı |
+
+**Düzeltmeler veriye yazılmaz.** Excel çözümlendikten *sonra* uygulanan ayrı bir
+katmanda dururlar; bu yüzden **yeni bir `.xlsx` yüklendiğinde kaybolmazlar**,
+yenisinin üstüne tekrar binerler. Kaynak dosya bu arada düzeltilmişse yama
+“etkisiz” diye işaretlenir; artık tutmuyorsa “uygulanamadı” der — sessizce
+yutulmaz. Listeden tek tek geri alınabilirler.
+
+Yazdığınız düzeltme **önce yalnız o tarayıcıda** geçerlidir. Herkesin görmesi için:
+
+```bash
+# panelde "Yama metnini kopyala" → metni bir dosyaya yapıştırın
+python3 araclar/guncelle.py --yama yamalar.json
+git commit -am "düzeltme" && git push
+```
+
+Kopyalanan metin **yürürlükteki listenin tamamıdır**, o yüzden `--yama` gömülü
+listeyi tümüyle değiştirir. Panoyu doğrudan boru hattına verebilirsiniz:
+`pbpaste | python3 araclar/guncelle.py --yama -`.
+Gömülü listeyi görmek: `--yama-liste`, boşaltmak: `--yama-sil`.
+
+Testi: `node araclar/duzeltme_testi.mjs` (gerçek tarayıcıda 20 kontrol).
+
+### 4. Excel'in yapısı tamamen değişirse
 Çözümleyici biçimi tanıyamazsa araç hata verip ne beklediğini yazar. O durumda
 `index.html` içindeki `parseAksam` / `parseTeacherSheet` fonksiyonları elden geçmelidir.
 
@@ -145,6 +194,8 @@ Uyum programının saatleri dosyadaki gün başlığından okunur, elle bakım g
 index.html              uygulamanın tamamı (kod + şifreli veri + logo, tek dosya)
 araclar/guncelle.py     Excel'i index.html'in içine şifreli gömen araç
 araclar/sifrele.js      AES-256-GCM şifreleme/çözme (guncelle.py bunu çağırır)
+araclar/duzeltme_testi.mjs  "Program düzeltme" bölümünün tarayıcı testi
+araclar/baski_testi.mjs     yazdırma çıktısının kağıt/sayfa ölçümü
 logo.jpg                kurum logosu (index.html'in içine de gömülüdür)
 ```
 
@@ -156,6 +207,9 @@ Bunlar Excel'den geliyor, uygulamada düzeltilmedi:
 2. **MASUM TEKİN**'in branşı 1. satırda *COĞRAFYA*, sonraki bloklarda *SOSYAL BİLGİLER*.
 
 Excel'de düzeltip yukarıdaki 2. yolla yükleyin, ikisi de kendiliğinden düzelir.
+
+Öğrenci düzeyindeki düzeltmeler (kimin hangi gruba gittiği) için Excel'i
+beklemeye gerek yok — 3. yol (yama) tam bunun için.
 
 ---
 
