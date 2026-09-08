@@ -1163,11 +1163,14 @@ var yazdirStil = null;
 function yazdir(kip){
   if(yazdirStil){ yazdirStil.remove(); yazdirStil = null; }
   document.body.setAttribute("data-yazdir", kip);
-  if(kip === "ogretmen"){
-    yazdirStil = document.createElement("style");
-    yazdirStil.textContent = "@page{size:297mm 210mm;margin:9mm}@page{size:A4 landscape;margin:9mm}";
-    document.head.appendChild(yazdirStil);
-  }
+  /* Kağıdı açıkça yazıyoruz: @page yoksa Chrome kendi varsayılanını (Letter,
+     216x279 mm) seçer. Önce mm ölçüsü, sonra anahtar sözcük — bazı yazıcı
+     uygulamaları (HP Smart, iOS AirPrint) "A4 landscape"i yok sayıyor. */
+  yazdirStil = document.createElement("style");
+  yazdirStil.textContent = kip === "ogretmen"
+    ? "@page{size:297mm 210mm;margin:9mm}@page{size:A4 landscape;margin:9mm}"
+    : "@page{size:210mm 297mm;margin:12mm}@page{size:A4 portrait;margin:12mm}";
+  document.head.appendChild(yazdirStil);
   window.print();
 }
 function yazdirTemizle(){

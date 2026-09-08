@@ -4,6 +4,10 @@
  *   node araclar/baski_testi.mjs "GÜNEŞ TUNCEL"            -> cikti.pdf
  *   node araclar/baski_testi.mjs "NİL DORA DEMİREL" ogrenci
  *   node araclar/baski_testi.mjs --hepsi                    -> tüm öğretmenler
+ *   node araclar/baski_testi.mjs --ogrenciler                -> tüm öğrenciler
+ *
+ * --ogrenciler PDF YAZMAZ (dosya adı öğrenci adı taşırdı); yalnız kağıt
+ * ölçüsünü ve sayfa sayısını ölçer, tek sayfaya sığmayanı listeler.
  *
  * window.print susturulur, sayfanın kendi yazdir() fonksiyonu çağrılır ve
  * Page.printToPDF `preferCSSPageSize:true` ile alınır — yani kağıt ölçüsünü
@@ -30,7 +34,8 @@ const ACILIS = 'bilsem2018', OGRETMEN_SIFRE = '1905';
 
 const arg = process.argv.slice(2);
 const hepsi = arg[0] === '--hepsi';
-const KIM = hepsi ? null : (arg[0] || 'DR. MUSTAFA CEM KAYNAR');
+const hepsiOgrenci = arg[0] === '--ogrenciler';
+const KIM = (hepsi || hepsiOgrenci) ? null : (arg[0] || 'DR. MUSTAFA CEM KAYNAR');
 const KIP = arg[1] || 'ogretmen';
 /* Çıktılar ÖĞRENCİ ADI içerir; depo public olduğu için varsayılan yer
    depo değil, geçici dizindir. */
@@ -70,7 +75,7 @@ await ev(`(function(){document.getElementById("upass").value=${JSON.stringify(AC
   document.getElementById("unlockForm").dispatchEvent(new Event("submit",{cancelable:true,bubbles:true}));})()`);
 for (let i = 0; i < 60; i++) { if (await ev('!!(window.state&&state.students&&state.students.size)')) break; await sleep(400); }
 
-async function bas(kim, kip, cikti) {
+async function bas(kim, kip, cikti, sessiz) {
   if (kip === 'ogretmen') {
     const r = await ev(`(function(){
       document.getElementById("tabTeacher").click();
@@ -83,26 +88,36 @@ async function bas(kim, kip, cikti) {
       sel.value=hit.value; sel.dispatchEvent(new Event("change",{bubbles:true}));
       return hit.textContent;
     })()`);
-    if (!r) { console.log(`${kim.padEnd(24)} BULUNAMADI`); return; }
+    if (!r) { console.log(`${kim.padEnd(24)} BULUNAMADI`); return null; }
   } else {
-    await ev(`(function(){var q=document.getElementById("q"); q.value=${JSON.stringify(kim)};
-      q.dispatchEvent(new Event("input",{bubbles:true}));
-      var f=document.getElementById("searchForm");
-      if(f) f.dispatchEvent(new Event("submit",{cancelable:true,bubbles:true}));})()`);
+    /* Kutuya yazmak SEÇMEZ — öneri listesi açılır, seçimi pickStudent yapar.
+       Yalnız yazıp geçince boş "Bir öğrenci arayın" ekranı basılıyordu. */
+    const r = await ev(`(function(){
+      var hedef=null;
+      state.students.forEach(function(s){
+        if(!hedef && s.name.toLocaleUpperCase("tr").indexOf(${JSON.stringify(kim)}.toLocaleUpperCase("tr"))>=0) hedef=s;
+      });
+      if(!hedef) return null;
+      pickStudent(hedef.key);
+      return state.student && state.student.name;
+    })()`);
+    if (!r) { console.log(`${kim.padEnd(24)} BULUNAMADI`); return null; }
   }
-  await sleep(600);
+  await sleep(sessiz ? 120 : 600);
   await ev(`(function(){ window.print=function(){}; yazdir(${JSON.stringify(kip)}); })()`);
-  await sleep(400);
+  await sleep(sessiz ? 120 : 400);
   const pdf = await send('Page.printToPDF', { printBackground: true, preferCSSPageSize: true });
   const buf = Buffer.from(pdf.result.data, 'base64');
-  fs.writeFileSync(cikti, buf);
+  if (cikti) fs.writeFileSync(cikti, buf);
   const txt = buf.toString('latin1');
   const sayfa = [...txt.matchAll(/\/Count\s+(\d+)/g)].map(m => +m[1]);
   const kutu = [...txt.matchAll(/\/MediaBox\s*\[\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\]/g)]
     .map(m => ({ w: +m[3] - +m[1], h: +m[4] - +m[2] }))[0] || { w: 0, h: 0 };
   const mm = v => Math.round(v / 72 * 25.4);
-  console.log(`${kim.padEnd(24)} ${sayfa.length ? Math.max(...sayfa) : '?'} sayfa · ${mm(kutu.w)}x${mm(kutu.h)} mm · ${kutu.w > kutu.h ? 'YATAY' : 'DİKEY'} · ${cikti}`);
+  const n = sayfa.length ? Math.max(...sayfa) : 0;
+  if (!sessiz) console.log(`${kim.padEnd(24)} ${n || '?'} sayfa · ${mm(kutu.w)}x${mm(kutu.h)} mm · ${kutu.w > kutu.h ? 'YATAY' : 'DİKEY'}${cikti ? ' · ' + cikti : ''}`);
   await ev('yazdirTemizle()');
+  return { n, w: mm(kutu.w), h: mm(kutu.h) };
 }
 
 if (hepsi) {
@@ -114,6 +129,18 @@ if (hepsi) {
     return [...document.getElementById("tsel").options].map(function(o){return o.textContent.split(" — ")[0];});
   })()`);
   for (const a of adlar) await bas(a, 'ogretmen', path.join(CIKTI_DIZIN, 'baski-' + a.replace(/[^\wÇĞİÖŞÜçğıöşü]+/g, '_') + '.pdf'));
+} else if (hepsiOgrenci) {
+  const adlar = await ev('(function(){var a=[];state.students.forEach(function(s){a.push(s.name);});return a.sort();})()');
+  console.log(`${adlar.length} öğrenci ölçülüyor…`);
+  const kotu = []; const olcu = new Map();
+  for (const a of adlar) {
+    const r = await bas(a, 'ogrenci', null, true);
+    if (!r) { kotu.push(a + ' BULUNAMADI'); continue; }
+    olcu.set(a, r);
+    if (r.n !== 1 || r.w !== 210 || r.h !== 297) kotu.push(`${a} → ${r.n} sayfa · ${r.w}x${r.h} mm`);
+  }
+  console.log(kotu.length ? 'SIĞMAYAN/SAPAN:\n' + kotu.join('\n')
+    : `${olcu.size}/${adlar.length} öğrencinin hepsi TEK A4 dikey sayfa (210x297 mm).`);
 } else {
   await bas(KIM, KIP, CIKTI);
 }
