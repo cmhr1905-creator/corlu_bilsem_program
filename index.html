@@ -186,7 +186,6 @@ button.primary:hover{filter:brightness(1.06)}
 .chip.MÜZİK{background:var(--f-muzik-bg);color:var(--f-muzik)}
 .chip.ATÖLYE{background:var(--f-atolye-bg);color:var(--f-atolye)}
 .chip.KULÜP{background:var(--f-kulup-bg);color:var(--f-kulup)}
-.chip.ghost{background:transparent;color:var(--text-mut);border:1px solid var(--line)}
 
 /* ---------- hafta ---------- */
 /* Dar ekranda kartlar alt alta; masaüstünde günler tek sırada yan yana.
@@ -201,7 +200,6 @@ button.primary:hover{filter:brightness(1.06)}
   /* dar sütunda içerik sıkışır ki kutu boyu ders saatini gösterebilsin */
   .week .lesson{padding:9px 12px;gap:3px}
   .week .l-top{gap:6px}
-  .week .l-top .chip.ghost{display:none}
   .week .time{font-size:11.5px;padding-left:7px}
   .week .slot{font-size:9px}
   .week .chip{font-size:10px;padding:2px 6px}
@@ -388,7 +386,6 @@ button.primary:hover{filter:brightness(1.06)}
   body[data-yazdir="ogretmen"] .slot{font-size:6.5px;letter-spacing:.04em}
   body[data-yazdir="ogretmen"] .chip{font-size:6.5px;padding:1px 3px;border-radius:3px}
   body[data-yazdir="ogretmen"] .hours{font-size:6.5px}
-  body[data-yazdir="ogretmen"] .l-top .chip.ghost{display:none}
   body[data-yazdir="ogretmen"] .l-body{padding-left:4px}
   body[data-yazdir="ogretmen"] .l-body .t-name{font-size:8px;font-weight:600}
   /* isimler iki sütunda: en yüksek gün sütunu yarıya iner */
@@ -963,11 +960,9 @@ function el(tag, cls, text){
   return n;
 }
 function chip(text, cls){ return el("span", "chip " + (cls || ""), text); }
-function srcLabel(src){
-  if(src === "uyum") return "Uyum programı";
-  if(src === "ek") return "Ek program";
-  return "Akşam programı";
-}
+/* Kaynak dosya adı ("Akşam programı" / "Uyum programı") ekranda GÖSTERİLMEZ:
+   veliye bir şey anlatmıyor, yalnız kalabalık ediyordu. Kaynak bilgisi
+   yönetici panelindeki "Veri kaynağı" bölümünde duruyor. */
 
 function studentMeta(name){ return state.roster.get(fold(name)) || null; }
 
@@ -982,7 +977,6 @@ function lessonCard(L, opts){
   if(L.slot) bits.push(L.slot);
   if(bits.length) top.appendChild(el("div","slot", bits.join(" · ")));
   top.appendChild(chip(L.program, L.family));
-  top.appendChild(chip(srcLabel(L.src), "ghost"));
   top.appendChild(el("div","hours", L.hours + " saat"));
   card.appendChild(top);
 
@@ -1094,7 +1088,7 @@ function renderStudent(){
   if(!state.student){
     var h = el("div","hint");
     h.appendChild(el("h2","","Bir öğrenci arayın"));
-    h.appendChild(el("p","","Ada yazmaya başlayın — Türkçe harfleri atlayabilirsiniz, “gulce ozsahin” de bulur. Akşam programı ile uyum programı tek haftalık çizelgede birleştirilmiştir."));
+    h.appendChild(el("p","","Ada yazmaya başlayın — Türkçe harfleri atlayabilirsiniz, “gulce ozsahin” de bulur. Bütün dersler tek haftalık çizelgede toplanmıştır."));
     var kurumSaat = 0;
     state.teachers.forEach(function(t){ kurumSaat += toplamSaat(t.lessons); });
     h.appendChild(el("p","tiny", state.students.size + " öğrenci · " + state.teachers.size +
@@ -2021,11 +2015,6 @@ function paintSource(){
   var line = document.getElementById("srcline");
   line.innerHTML = "";
   line.appendChild(el("div","", state.students.size + " öğrenci · " + state.teachers.size + " öğretmen"));
-  var b = el("div","");
-  var s1 = document.createElement("b");
-  s1.textContent = "Akşam + Uyum programı";
-  b.appendChild(s1);
-  line.appendChild(b);
 
   var meta = document.getElementById("dsMeta");
   if(meta){
