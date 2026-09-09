@@ -80,7 +80,9 @@ const prog = `(function(){var s=state.students.get(fold(${JSON.stringify(OGR)}))
   return s ? s.lessons.map(function(L){return L.dayKey+" "+L.slot+" "+L.teacher;}).sort() : null;})()`;
 
 console.log('\n1) Gömülü yamalar açılışta biniyor mu');
-ol('513 öğrenci yüklendi', await ev('state.students.size') === 513, await ev('state.students.size'));
+/* Öğrenci sayısı da program dosyaları geldikçe değişir — sabitleme. */
+const OGR_SAYI = await ev('state.students.size');
+ol('öğrenciler yüklendi (' + OGR_SAYI + ')', OGR_SAYI > 400, OGR_SAYI);
 /* Gömülü yama sayısı zamanla değişir; sayıyı veriden AL, sabitleme. */
 const N = await ev('state.yamaSonuc.length');
 ol('gömülü düzeltme var (' + N + ')', N >= 3);
